@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import cv2
 
 
 class Coordinate(object):
@@ -27,24 +28,6 @@ class Coordinate(object):
         功能：计算两条空间直线之间公垂线与两条直线交点的坐标与公垂线段的距离；
         输入：直线1、2上的定点和单位方向矢量；
         输出：D：两条公垂线之间的距离；PM：公垂线和直线1的交点坐标；PN：公垂线和直线二的交点坐标；
-        DEMO:
-            import sys
-            import numpy as np
-            import math
-            #根据电脑实际路径添加Geomeas库
-            sys.path.append('C:\\Users\\Administrator\\Desktop\\geo-meas-master\\src')
-            #确认路径是否添加
-            import geomeas as gm
-            P3 = np.array([-121.015239,-264.506911,-189.283544])
-            P4 = np.array([-75.884264,-165.862683,-59.067218])
-            P5 = np.array([-7.196526,-262.243481,11.932582])
-            P6 = np.array([-450.731169,-243.407134,-573.947270])
-            v3 = gm.Vector().calVectorFrom2Points(P4,P3)
-            v4 = gm.Vector().calVectorFrom2Points(P5,P6)
-            PM, PN, d = gm.Coordinate().calCoordinatesFrom2SpatialLines(P1=P4, v1=v3, P2=P5, v2=v4)
-            print('PM:', PM)
-            print('PN:', PN)
-            print('d:', d)
         '''
         l = np.cross(v2, v1)
         l = l / np.linalg.norm(l)
@@ -72,31 +55,6 @@ class Coordinate(object):
         功能：计算两条空间直线的交点，先判断有无交点，如有，则输出解析解，如无，则输出最小二乘解；
         输入：直线1、2上的定点和方向矢量；
         输出：ret:0表示有交点，非零表示无交点；X_LS:两条直线的最小二乘解；
-        DEMO:
-            import sys
-            import numpy as np
-            #根据电脑实际路径添加Geomeas库
-            sys.path.append('C:\\Users\\Administrator\\Desktop\\geo-meas-master\\src')
-            #确认路径是否添加
-            import geomeas as gm
-            #相交直线
-            P0 = np.array([228.578593,-69.260001,-143.548547])#交点坐标
-            P1 = np.array([-31.687322,-69.260001,-143.548547])
-            P2 = np.array([265.412025,11.248018,182.180592])
-            v1 = gm.Vector().calVectorFrom2Points(P1,P0)
-            v2 = gm.Vector().calVectorFrom2Points(P2,P0)
-            retdict = gm.Coordinate().calCoordinateFrom2LinesByLS(P1=P1, v1=v1, P2=P2, v2=v2)
-            print('相交直线求解：', retdict)
-            #不相交直线
-            P3 = np.array([-121.015239,-264.506911,-189.283544])
-            P4 = np.array([-75.884264,-165.862683,-59.067218])
-            P5 = np.array([-642.494851,-297.194175,-143.548547])
-            P6 = np.array([88.684371,-221.630072,-143.548547])
-            X_Center = np.array([[-122.457462],[-252.096252],[-159.575206]])#公垂线中点坐标
-            v3 = gm.Vector().calVectorFrom2Points(P3,P4)
-            v4 = gm.Vector().calVectorFrom2Points(P5,P6)
-            retdict = gm.Coordinate().calCoordinateFrom2LinesByLS(P1=P3, v1=v3, P2=P6, v2=v4)
-            print('不相交直线求解：', retdict)
         '''
         D = np.array([[P2[0] - P1[0], v1[0], v2[0]],
                       [P2[1] - P1[1], v1[1], v2[1]],
@@ -125,15 +83,6 @@ class Coordinate(object):
         功能：计算空间两直线的交点；
         输入：利用空间直线的“点向式”方程，分别输入直线一点与该直线的方向向量P_1(x_1,y_1,z_1),s_1(m_1,n_1,p_1),Q_1(x_2,y_2,z_2),s_2(m_2,n_2,p_2);
         输出：两直线的交点M(x,y,z)；
-        DEMO:
-                import geomeas as gm
-                import numpy as np
-                P_1 = np.array([-108.45, 174.45, 0])
-                s_1 = np.array([-335.6, -77.27, 0])
-                Q_1 = np.array([227.15, 174.45, 0])
-                s_2 = np.array([335.6, -77.27, 0])
-                print(gm.Coordinate().calCoordinateFrom2Lines(P_1, s_1, Q_1, s_2))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.60-63.
         '''
         m_1 = np.array([s_1[0]])
         n_1 = np.array([s_1[1]])
@@ -158,13 +107,6 @@ class Coordinate(object):
         功能：直线和平面计算交点坐标；
         输入：空间直线任意两点坐标P1(x1,y1,z1),P2(x2,y2,z2)，平面方程的参数PlaneParams(a,b,c,d);
         输出：空间直线与平面的交点E(x,y,z)，输出格式为数组（[x y z]）;
-        DEMO：
-
-                P1 = np.array([-670.13, 1477.30, -1576.88])
-                P2 = np.array([-761.34, 914.65, -1576.88])
-                PlaneParams = np.array([0.00000000e+00, 5.54216347e+05, 0.00000000e+00, -3.57990507e+08])
-                print(calCoordinateFrom2PointsAndPlane(P1, P2, PlaneParams))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.60-65.
         '''
         a = np.array([PlaneParams[0]])
         b = np.array([PlaneParams[1]])
@@ -196,13 +138,6 @@ class Distance():
         功能：计算空间两点距离；
         输入：空间内任意两点坐标P_1(x1,y1,z1),P_2(x2,y2,z2);
         输出：两点的距离Distance；
-        DEMO:   import geomeas as gm
-                import numpy as np
-                import math
-                P_1 = np.array([13.66, 121.55, 0])
-                P_2 = np.array([101.84, 121.55, 136.68])
-                print(gm.Distance().calDistanceFrom2Points(P_1, P_2))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.71.
         '''
         x1 = np.array(P_1[0])
         y1 = np.array(P_1[1])
@@ -230,12 +165,6 @@ class Plane():
         功能 ： 通过三点求解平面方程参数；
         输入 ： 平面上任意三点坐标 Point1(xo1,yo1,zo1),Point2(xo2,yo2,zo2),Point3(xo3,yo3,zo3);
         输出 ： 平面方程的参数 PlaneParams = (a,b,c,d)，输出格式为数组（[a b c d]）;
-        DEMO ：
-                Point1 = np.array([-2919.13, 654.94, 1100])
-                Point2 = np.array([-2919.13, 0, 1100])
-                Point3 = np.array([-2438.31, 0, 0])
-                print(calPlaneEquationFrom3Points(Point1, Point2, Point3))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.48-51.
         '''
         xo1 = Point1[0]
         yo1 = Point1[1]
@@ -262,12 +191,6 @@ class Vector():
         功能：利用空间两点计算单位方向向量；
         输入：空间内任意两点坐标Point_1(x1,y1,z1),Point_2(x2,y2,z2);
         输出：空间方向向量s；
-        DEMO:   import geomeas as gm
-                import numpy as np
-                Point_1 = np.array([227.15, 174.45, 0])
-                Point_2 = np.array([-108.45, 251.72, 0])
-                print(gm.Vector().calVectorFrom2Points(Point_1, Point_2))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.6-10.
         '''
         x1 = np.array(Point_1[0])
         y1 = np.array(Point_1[1])
@@ -288,12 +211,6 @@ class Vector():
         功能：计算空间两平面交线的方向向量；
         输入：两空间平面方程的参数Params_1(a_1,b_1,c_1,d_1),Params_2(a_2,b_2,c_2,d_2);
         输出：空间两平面交线的方向向量s；
-        DEMO:   import geomeas as gm
-                import numpy as np
-                Param_1 = np.array([0, 0, -4361.9337, 362040.4971])
-                Param_2 = np.array([-2180.41, 6939.63, 2165.499, -283785.5822])
-                print(gm.Vector().calLineVictorFrom2Planes(Param_1, Param_2))
-        参考资料：邱维声. 解析几何（第三版）[M]. 北京：北京大学出版社，2015.30-36,48-51.
         '''
         a_1 = np.array(Params_1[0])
         b_1 = np.array(Params_1[1])
@@ -308,10 +225,6 @@ class Vector():
 
 
 class Pose():
-    '''
-    Calculation Pose Matrix from other geometric elements.
-    '''
-
     def calPoseFrom3Points(self, Oab, Pxb, Pyb):
         '''
         作者：lgl；
@@ -322,15 +235,6 @@ class Pose():
             坐标系a的x轴正半轴上任一点在坐标系b下的坐标:Pxb(x2,y2,z2);
             坐标系a的y轴正半轴上任一点在坐标系b下的坐标:Pyb(x3,y3,z3);
         输出：坐标系n到坐标系s的旋转矩阵Rns，输出格式为矩阵;
-        DEMO：
-                import geomeas as gm
-                import numpy as np
-
-                Oab = np.array([-37.84381632, 152.36389864, 41.68600167])
-                Pxb = np.array([-19.59820338, 139.58818292, 45.55380309])
-                Pyb = np.array([-38.23270656, 157.3130709, 59.86810327])
-
-                print(gm.Pose().calPoseFrom3Points(Oab, Pxb, Pyb))
         '''
         x = (Pxb - Oab) / np.linalg.norm(Pxb - Oab)
         y = (Pyb - Oab) / np.linalg.norm(Pyb - Oab)
@@ -349,16 +253,6 @@ class Pose():
         输入：两个矢量在坐标系s下的坐标:Vs1(xs1,ys1,zs1),Vs2(xs2,ys2,zs2);
             在坐标系n下的坐标:Vn1(xn1,yn1,zn1),Vn2(xn2,yn2,zn2);
         输出：坐标系n到坐标系s的旋转矩阵Rns，输出格式为矩阵;
-        DEMO：
-                import geomeas as gm
-                import numpy as np
-
-                Vs1 = np.array([0.55397988, 0.82791962, -0.08749517])
-                Vs2 = np.array([0.02063334, -0.26258813, -0.96468738])
-                Vn1 = np.array([0.97066373, 0.20744552, 0.12156592])
-                Vn2 = np.array([0, 0, -1])
-
-                print(gm.Pose().calOrientationFrom2Vectors(Vs1, Vs2, Vn1, Vn2))
         '''
         # frame s
         a = Vs1
@@ -383,12 +277,6 @@ class Pose():
         功能：欧拉角转换成旋转矩阵；
         输入：欧拉角
         输出：旋转矩阵;
-        DEMO：
-                import cglgl as cg
-                import numpy as np
-
-                ol=np.array([10,20,60])
-                print(cg.Pose().oltomatrix(ol))
         '''
         ax = ol[0]
         by = ol[1]
@@ -403,3 +291,256 @@ class Pose():
                            [cax * scz + sax * cby * ccz, -sax * scz + cax * cby * ccz, -sby * ccz],
                            [sax * sby, cax * sby, cby]])
         return matrix
+
+    def vectormatrix(self,v1,R1):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：向量与旋转矩阵相乘；
+        输入：向量，旋转矩阵
+        输出：向量;
+        '''
+        return np.array([v1[0]*R1[0][0]+v1[1]*R1[0][1]+v1[2]*R1[0][2],v1[0]*R1[1][0]+v1[1]*R1[1][1]+v1[2]*R1[1][2],v1[0]*R1[2][0]+v1[1]*R1[2][1]+v1[2]*R1[2][2]])
+
+    def makeVectorfromarray(self,arrayv):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：向量转单位向量；
+        输入：向量
+        输出：向量;
+        '''
+        d = arrayv[0]+arrayv[1]+arrayv[2]
+        return np.array([arrayv[0]/d,arrayv[1]/d,arrayv[2]/d])
+
+    def dot_product_angle(self, v1, v2):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：计算两个向量夹角；
+        输入：向量，向量
+        输出：夹角角度;
+        '''
+        if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+            print("Zero magnitude vector!")
+        else:
+            vector_dot_product = np.dot(v1, v2)
+            arccos = np.arccos(vector_dot_product / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+            angle = np.degrees(arccos)
+            return angle
+        return 0
+    def jisuan(self,v1,v2):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：计算两个直线夹角；
+        输入：向量，向量
+        输出：夹角角度;
+        '''
+        dx1 = v1[2] - v1[0]
+        dy1 = v1[3] - v1[1]
+        dx2 = v2[2] - v2[0]
+        dy2 = v2[3] - v2[1]
+        angle1 = math.atan2(dy1, dx1)
+        angle1 = int(angle1 * 180 / math.pi)
+        angle2 = math.atan2(dy2, dx2)
+        angle2 = int(angle2 * 180 / math.pi)
+        if angle1 * angle2 >= 0:
+            included_angle = abs(angle1 - angle2)
+        else:
+            included_angle = abs(angle1) + abs(angle2)
+            if included_angle > 180:
+                included_angle = 360 - included_angle
+        return included_angle
+
+    def eulerAnglesToRotationMatrix(self, angles1):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：欧拉角转旋转矩阵；
+        输入：欧拉角
+        输出：旋转矩阵;
+        '''
+        theta = np.zeros((3, 1), dtype=np.float64)
+        theta[0] = angles1[0] * 3.141592653589793 / 180.0
+        theta[1] = angles1[1] * 3.141592653589793 / 180.0
+        theta[2] = angles1[2] * 3.141592653589793 / 180.0
+        R_x = np.array([[1, 0, 0],
+                        [0, math.cos(theta[0]), -math.sin(theta[0])],
+                        [0, math.sin(theta[0]), math.cos(theta[0])]
+                        ])
+        R_y = np.array([[math.cos(theta[1]), 0, math.sin(theta[1])],
+                        [0, 1, 0],
+                        [-math.sin(theta[1]), 0, math.cos(theta[1])]
+                        ])
+        R_z = np.array([[math.cos(theta[2]), -math.sin(theta[2]), 0],
+                        [math.sin(theta[2]), math.cos(theta[2]), 0],
+                        [0, 0, 1]
+                        ])
+        R = np.dot(R_z, np.dot(R_y, R_x))
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+        singular = sy < 1e-6
+        if not singular:
+            x = math.atan2(R[2, 1], R[2, 2])
+            y = math.atan2(-R[2, 0], sy)
+            z = math.atan2(R[1, 0], R[0, 0])
+        else:
+            x = math.atan2(-R[1, 2], R[1, 1])
+            y = math.atan2(-R[2, 0], sy)
+            z = 0
+        # print('dst:', R)
+        x = x * 180.0 / 3.141592653589793
+        y = y * 180.0 / 3.141592653589793
+        z = z * 180.0 / 3.141592653589793
+        rvecstmp = np.zeros((1, 1, 3), dtype=np.float64)
+        rvecs, _ = cv2.Rodrigues(R, rvecstmp)
+        # print()
+        return R, rvecs, x, y, z
+
+    def isRotationMatrix(self,R):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：判断是不是旋转矩阵；
+        输入：旋转矩阵
+        输出：True or False;
+        '''
+        Rt = np.transpose(R)
+        shouldBeIdentity = np.dot(Rt, R)
+        I = np.identity(3, dtype=R.dtype)
+        n = np.linalg.norm(I - shouldBeIdentity)
+        return n < 1e-6
+
+    def rotationMatrixToEulerAngles(self,R):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：旋转矩阵转欧拉角；
+        输入：旋转矩阵
+        输出：欧拉角;
+        '''
+        assert (self.isRotationMatrix(R))
+
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+
+        singular = sy < 1e-6
+
+        if not singular:
+            x = math.atan2(R[2, 1], R[2, 2])
+            y = math.atan2(-R[2, 0], sy)
+            z = math.atan2(R[1, 0], R[0, 0])
+        else:
+            x = math.atan2(-R[1, 2], R[1, 1])
+            y = math.atan2(-R[2, 0], sy)
+            z = 0
+        x = x * 180.0 / 3.141592653589793
+        y = y * 180.0 / 3.141592653589793
+        z = z * 180.0 / 3.141592653589793
+        return np.array([x, -y, z])
+    def oljisuan(self,Point_1, Point_2, Point_3, Point_4):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：根据四个点计算欧拉角；
+        输入：四个点三维坐标
+        输出：欧拉角;
+        '''
+
+        A = Vector().calVectorFrom2Points(Point_1, Point_2)
+
+        B = Vector().calVectorFrom2Points(Point_3, Point_4)
+        # print(A)
+        # print(B)
+        origin_vector = np.array(A)
+        location_vector = np.array(B)
+        #点积
+        c = np.dot(origin_vector, location_vector)
+        #计算两个向量（向量数组）的叉乘。叉乘返回的数组既垂直于a，又垂直于b
+        n_vector = np.cross(origin_vector, location_vector)
+        #linalg本意为linear(线性) + algebra(代数)，norm则表示范数
+        s = np.linalg.norm(n_vector)
+        # print(c, s)
+
+        n_vector_invert = np.array((
+            [0, -n_vector[2], n_vector[1]],
+            [n_vector[2], 0, -n_vector[0]],
+            [-n_vector[1], n_vector[0], 0]
+        ))
+        #生成单位矩阵
+        I = np.eye(3)
+        R_w2c = I + n_vector_invert + np.dot(n_vector_invert, n_vector_invert) / (1 + c)
+        # print('R_w2c',R_w2c)
+        ola = self.rotationMatrixToEulerAngles(R_w2c)
+        # olb = self.rotateMatrixToEulerAngles2(R_w2c,R_w2c)
+        # print('ola',ola)
+        return ola
+
+    def TowVectorToMatrix(self,A, B):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：计算两个向量之间的旋转矩阵；
+        输入：向量，向量
+        输出：旋转矩阵;
+        '''
+        origin_vector = np.array(A)
+        location_vector = np.array(B)
+        #点积
+        c = np.dot(origin_vector, location_vector)
+        #计算两个向量（向量数组）的叉乘。叉乘返回的数组既垂直于a，又垂直于b
+        n_vector = np.cross(origin_vector, location_vector)
+        #linalg本意为linear(线性) + algebra(代数)，norm则表示范数
+        s = np.linalg.norm(n_vector)
+        # print(c, s)
+
+        n_vector_invert = np.array((
+            [0, -n_vector[2], n_vector[1]],
+            [n_vector[2], 0, -n_vector[0]],
+            [-n_vector[1], n_vector[0], 0]
+        ))
+        #生成单位矩阵
+        I = np.eye(3)
+        R_w2c = I + n_vector_invert + np.dot(n_vector_invert, n_vector_invert) / (1 + c)
+        return R_w2c
+
+    def oljisuanliang(self,A, B):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：两个向量计算欧拉角；
+        输入：向量，向量
+        输出：欧拉角;
+        '''
+        origin_vector = np.array(A)
+        location_vector = np.array(B)
+        #点积
+        c = np.dot(origin_vector, location_vector)
+        #计算两个向量（向量数组）的叉乘。叉乘返回的数组既垂直于a，又垂直于b
+        n_vector = np.cross(origin_vector, location_vector)
+        #linalg本意为linear(线性) + algebra(代数)，norm则表示范数
+        s = np.linalg.norm(n_vector)
+        # print(c, s)
+
+        n_vector_invert = np.array((
+            [0, -n_vector[2], n_vector[1]],
+            [n_vector[2], 0, -n_vector[0]],
+            [-n_vector[1], n_vector[0], 0]
+        ))
+        #生成单位矩阵
+        I = np.eye(3)
+        R_w2c = I + n_vector_invert + np.dot(n_vector_invert, n_vector_invert) / (1 + c)
+        # print('R_w2c',R_w2c)
+        ola = self.rotationMatrixToEulerAngles(R_w2c)
+        # olb = self.rotateMatrixToEulerAngles2(R_w2c,R_w2c)
+        # print('ola',ola)
+        return ola
+
+    def findcenter(self, land23, land24):
+        '''
+        作者：lgl；
+        日期：2023.1.29；
+        功能：找到两点中点坐标；
+        输入：坐标点，坐标点
+        输出：坐标点;
+        '''
+        return [(land23[0] + land24[0]) / 2.0, (land23[1] + land24[1]) / 2.0, (land23[2] + land24[2]) / 2.0]

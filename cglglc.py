@@ -15,10 +15,8 @@ class Coordinate(object):
         输入：img：原始图像；option：'Contours'—轮廓，‘Blob’—Blob，‘Centroid’,threshold:二值化阈值；
         输出：CenterXY：质心图像坐标，以list形式输出（允许有多个），num：识别到的光斑个数；
         '''
-        ###Please code here...
         CenterXY = 0.0
         num = 0
-        ###
         return CenterXY, num
 
     def calCoordinatesFrom2SpatialLines(self, P1, v1, P2, v2):
@@ -519,7 +517,6 @@ class Pose():
         n_vector = np.cross(origin_vector, location_vector)
         #linalg本意为linear(线性) + algebra(代数)，norm则表示范数
         s = np.linalg.norm(n_vector)
-        # print(c, s)
 
         n_vector_invert = np.array((
             [0, -n_vector[2], n_vector[1]],
@@ -529,10 +526,7 @@ class Pose():
         #生成单位矩阵
         I = np.eye(3)
         R_w2c = I + n_vector_invert + np.dot(n_vector_invert, n_vector_invert) / (1 + c)
-        # print('R_w2c',R_w2c)
         ola = self.rotationMatrixToEulerAngles(R_w2c)
-        # olb = self.rotateMatrixToEulerAngles2(R_w2c,R_w2c)
-        # print('ola',ola)
         return ola
 
     def findcenter(self, land23, land24):

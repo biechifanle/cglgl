@@ -98,6 +98,28 @@ class Coordinate(object):
         z = z_1 + p_1 * t
         return x, y, z
 
+    def project_to_local_y0z(self,y1, y_local, z_local):
+        """
+        将向量 y1 投影到局部坐标系的 y0z 平面。
+        参数:
+            y1 (numpy array): 原始向量 [x, y, z]（在世界坐标系中表示）
+            y_local (numpy array): 局部坐标系的 y 轴向量 [x, y, z]（在世界坐标系中表示）
+            z_local (numpy array): 局部坐标系的 z 轴向量 [x, y, z]（在世界坐标系中表示）
+        返回:
+            numpy array: 投影到 y0z 平面的向量（在世界坐标系中表示）
+        """
+        # 归一化局部坐标系的 y 和 z 轴向量
+        y_local = y_local / np.linalg.norm(y_local)
+        z_local = z_local / np.linalg.norm(z_local)
+
+        # 计算 y1 在 y_local 和 z_local 上的投影分量
+        y_component = np.dot(y1, y_local) * y_local
+        z_component = np.dot(y1, z_local) * z_local
+
+        # 投影到 y0z 平面的向量
+        y1_projected = y_component + z_component
+
+        return y1_projected
     def calCoordinateFrom2PointsAndPlane(self, P1, P2, PlaneParams):
         '''
         作者：lgl；
@@ -152,7 +174,40 @@ class Distance():
 
 
 class Angle():
-    pass
+    def rodrigues_rotation(self,a, u, q):
+        """
+        作者：lgl；
+        日期：2025.1.23；
+        使用Rodrigues'旋转公式计算一个向量绕着另一个向量旋转后的结果。
+
+        参数:
+        a : array_like
+            需要旋转的向量。
+        u : array_like
+            单位向量，表示旋转轴。
+        q : float
+            旋转的角度，以弧度为单位。
+
+        返回:
+        ndarray: 旋转后的新向量。
+        """
+        # 确保输入是numpy数组，并且u是单位向量
+        a = np.asarray(a, dtype=float)
+        u = np.asarray(u, dtype=float) / np.linalg.norm(u)  # 确保u是单位向量
+
+        # 计算叉乘 u x a
+        cross_product = np.cross(u, a)
+
+        # 计算 (1 - cos(q)) * (u x a)
+        scaled_cross_product = (1 - np.cos(q)) * cross_product
+
+        # 计算 sin(q) * (u x a)
+        sin_cross_product = np.sin(q) * cross_product
+
+        # 应用Rodrigues'旋转公式
+        b = a + sin_cross_product + scaled_cross_product
+
+        return b
 
 
 class Plane():
@@ -268,6 +323,36 @@ class Pose():
 
         return Rns
 
+    def ol_to_m(self,euler_angles, order='XYZ'):
+        """
+        作者：lgl；
+        日期：2025.1.23；
+        根据 BVH 的 OFFSET 和欧拉角计算关节的平移和旋转变换。
+        参数:
+            offset (list): OFFSET 值 [x, y, z]
+            euler_angles (list): 欧拉角 [Xrotation, Yrotation, Zrotation]，单位为度
+            order (str): 欧拉角旋转顺序（默认为 'XYZ'）
+        返回:
+            dict: 包括平移矩阵和旋转矩阵
+        """
+        # 旋转角度转为弧度
+        euler_angles = np.radians(euler_angles)
+
+        # 计算旋转矩阵
+        def rotation_matrix(axis, angle):
+            c, s = np.cos(angle), np.sin(angle)
+            if axis == 'x':
+                return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
+            elif axis == 'y':
+                return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
+            elif axis == 'z':
+                return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+        R = np.eye(3)  # 初始化单位矩阵
+        for axis, angle in zip(order.lower(), euler_angles):
+            R = R @ rotation_matrix(axis, angle)
+
+        return R
     def oltomatrix(self, ol):
         '''
         作者：lgl；
@@ -538,3 +623,118 @@ class Pose():
         输出：坐标点;
         '''
         return [(land23[0] + land24[0]) / 2.0, (land23[1] + land24[1]) / 2.0, (land23[2] + land24[2]) / 2.0]
+
+
+class BVHNode:
+    def __init__(self, name):
+        self.name = name
+        self.offset = None
+        self.channels = []
+        self.children = []
+        self.channel_indices = None  # 用于存储通道在数据中的索引范围
+
+
+    def parse_hierarchy(self,lines, start_index=0):
+        nodes = {}
+        root = None
+        stack = []
+        channel_index = 0  # 记录通道索引
+
+        i = start_index
+        while i < len(lines):
+            line = lines[i].strip()
+            if line.startswith('ROOT') or line.startswith('JOINT'):
+                node_name = line.split()[1]
+                node = BVHNode(node_name)
+                nodes[node_name] = node
+                if not root:
+                    root = node
+                if stack:
+                    parent = stack[-1]
+                    parent.children.append(node)
+                stack.append(node)
+            elif line == 'End Site':
+                end_site = BVHNode(f"{stack[-1].name}_end")
+                stack[-1].children.append(end_site)
+                stack.append(end_site)
+            elif line.startswith('OFFSET'):
+                offset_values = list(map(float, line.split()[1:]))
+                stack[-1].offset = np.array(offset_values)
+            elif line.startswith('CHANNELS'):
+                num_channels = int(line.split()[1])
+                channels = line.split()[2:]
+                stack[-1].channels.extend(channels[:num_channels])
+                stack[-1].channel_indices = (channel_index, channel_index + num_channels)
+                channel_index += num_channels
+            elif line == '}':
+                stack.pop()
+            elif line.startswith('MOTION'):
+                break
+            i += 1
+
+        return root, i
+
+
+    def parse_motion(self,lines, start_index, num_frames, nodes):
+        motion_data = []
+        for i in range(start_index, start_index + num_frames):
+            frame = list(map(float, lines[i].strip().split()))
+            motion_data.append(frame)
+
+        frame_dicts = []
+        frame_postion_dicts = []
+        for frame in motion_data:
+            frame_dict = {}
+            postion_dict = {}
+            for node_name, node in nodes.items():
+                if node.channel_indices:
+                    start, end = node.channel_indices
+                    rotation_angles = frame[start:end]
+                    pos_tion = [0, 0, 0]
+                    if len(rotation_angles) == 6:
+                        pos_tion = rotation_angles[:3]
+                        rotation_angles = rotation_angles[3:]
+                    if node_name in ['RightArm', 'LeftArm']:
+                        rotation_angles = [rotation_angles[0], -rotation_angles[1], rotation_angles[2]]
+                    frame_dict[node_name] = rotation_angles
+                    postion_dict[node_name] = pos_tion
+            frame_dicts.append(frame_dict)
+            frame_postion_dicts.append(postion_dict)
+
+        return frame_dicts, frame_postion_dicts
+
+
+    def read_bvh(self,file_path):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                lines = file.readlines()
+
+            i = 0
+            while 'MOTION' not in lines[i]:
+                i += 1
+            root, i = self.parse_hierarchy(lines)
+
+            nodes = {}
+            stack = [root]
+            while stack:
+                node = stack.pop()
+                nodes[node.name] = node
+                stack.extend(node.children)
+
+            i += 1
+            frames_line = lines[i].strip().split(': ')
+            num_frames = int(frames_line[1]) if len(frames_line) == 2 and frames_line[0] == 'Frames' else None
+            i += 1
+            frame_time_line = lines[i].strip().split(': ')
+            frame_time = float(frame_time_line[1]) if len(frame_time_line) == 2 and frame_time_line[
+                0] == 'Frame Time' else None
+            i += 1
+
+            if num_frames is None or frame_time is None:
+                raise ValueError("帧数或帧时间解析失败")
+
+            frame_dicts, frame_postion_dicts = self.parse_motion(lines, i, num_frames, nodes)
+
+            return frame_dicts, num_frames, frame_time, frame_postion_dicts
+        except Exception as e:
+           pass
